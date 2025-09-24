@@ -1,4 +1,6 @@
--- LocalScript
+-- ServerFinder.lua
+-- ใส่โค้ดนี้บน GitHub แล้วเรียกด้วย loadstring
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -35,7 +37,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 24
 title.Parent = mainFrame
 
--- Input box
+-- Input Box
 local inputBox = Instance.new("TextBox")
 inputBox.Size = UDim2.new(0.8, 0, 0, 40)
 inputBox.Position = UDim2.new(0.1, 0, 0, 60)
@@ -107,6 +109,7 @@ local function addResultText(text)
     label.TextSize = 18
     label.Text = text
     label.Parent = scrollFrame
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,8)
     corner.Parent = label
