@@ -1,0 +1,132 @@
+-- LocalScript
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local placeId = game.PlaceId
+
+-- สร้าง ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ServerFinderUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.ClipsDescendants = true
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 20)
+corner.Parent = mainFrame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "Server Finder"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 24
+title.Parent = mainFrame
+
+-- Input box
+local inputBox = Instance.new("TextBox")
+inputBox.Size = UDim2.new(0.8, 0, 0, 40)
+inputBox.Position = UDim2.new(0.1, 0, 0, 60)
+inputBox.PlaceholderText = "ใส่ชื่อผู้เล่น"
+inputBox.Text = ""
+inputBox.ClearTextOnFocus = false
+inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputBox.Font = Enum.Font.Gotham
+inputBox.TextSize = 20
+inputBox.Parent = mainFrame
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 10)
+inputCorner.Parent = inputBox
+
+-- Search Button
+local searchButton = Instance.new("TextButton")
+searchButton.Size = UDim2.new(0.8, 0, 0, 40)
+searchButton.Position = UDim2.new(0.1, 0, 0, 110)
+searchButton.Text = "ค้นหาและ Join"
+searchButton.BackgroundColor3 = Color3.fromRGB(100, 0, 200)
+searchButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+searchButton.Font = Enum.Font.GothamBold
+searchButton.TextSize = 20
+searchButton.Parent = mainFrame
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 10)
+buttonCorner.Parent = searchButton
+
+-- ScrollingFrame
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(0.9, 0, 0.6, 0)
+scrollFrame.Position = UDim2.new(0.05, 0, 0.35, 0)
+scrollFrame.CanvasSize = UDim2.new(0,0,0,0)
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.Parent = mainFrame
+local uiLayout = Instance.new("UIListLayout")
+uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiLayout.Padding = UDim.new(0,5)
+uiLayout.Parent = scrollFrame
+
+-- ฟังก์ชันค้นหาเซิร์ฟเวอร์
+local function findServerWithPlayer(playerName)
+    local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+    repeat
+        local response = game:HttpGet(url)
+        local data = HttpService:JSONDecode(response)
+        for _, server in ipairs(data.data) do
+            for _, p in ipairs(server.playing) do
+                if p == playerName then
+                    return server.id
+                end
+            end
+        end
+        url = data.nextPageCursor and ("https://games.roblox.com/v1/games/"..placeId.."/servers/Public?cursor="..data.nextPageCursor) or nil
+    until not url
+    return nil
+end
+
+-- ฟังก์ชันโชว์ผลลัพธ์
+local function addResultText(text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 30)
+    label.BackgroundTransparency = 0.2
+    label.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 18
+    label.Text = text
+    label.Parent = scrollFrame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,8)
+    corner.Parent = label
+
+    uiLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scrollFrame.CanvasSize = UDim2.new(0,0,0,uiLayout.AbsoluteContentSize.Y + 10)
+    end)
+end
+
+-- กดปุ่ม
+searchButton.MouseButton1Click:Connect(function()
+    local targetName = inputBox.Text
+    if targetName ~= "" then
+        addResultText("กำลังค้นหา: "..targetName.." ...")
+        local success, serverId = pcall(findServerWithPlayer, targetName)
+        if success and serverId then
+            addResultText("เจอเซิร์ฟเวอร์! กำลัง Join...")
+            TeleportService:TeleportToPlaceInstance(placeId, serverId, player)
+        else
+            addResultText("ไม่พบผู้เล่นในเซิร์ฟเวอร์สาธารณะ")
+        end
+    end
+end)
